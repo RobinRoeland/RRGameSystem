@@ -1,7 +1,9 @@
 # RRGameSystem 
-**Check out a demo of our project at: [Github Pages](https://robinroeland.github.io/RRGameSystem/)!**
+**Check out a demo of my project at: [Github Pages](https://robinroeland.github.io/RRGameSystem/)!**
 
 **Copyright © 2026 Robin Roeland. All rights reserved.**
+
+~ (this is my personal project to learn and experiment)
 
 ---
 
