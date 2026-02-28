@@ -74,6 +74,7 @@ export class AppComponent {
       map(route => route.snapshot.data['title'] || route.snapshot.title || '')
     ).subscribe(title => {
       this.pageTitle = title;
+      this.autoShowTutorialForCurrentRoute();
     });
   }
 
@@ -85,35 +86,15 @@ export class AppComponent {
     }
     this.pageTitle = route.snapshot.data['title'] || route.snapshot.title || '';
 
-    // Show tutorial if not completed AND we're on a game route
-    if (!this.tutorialService.isTutorialCompleted()) {
-      // Try to show tutorial with retry logic for slow hosts (e.g., GitHub Pages)
-      this.tryShowTutorial(0);
-    }
+    this.autoShowTutorialForCurrentRoute();
   }
 
-  private tryShowTutorial(attempt: number): void {
-    const maxAttempts = 5;
-    const delay = 500 + (attempt * 300); // Progressive delay: 500ms, 800ms, 1100ms, 1400ms, 1700ms
-    
-    setTimeout(() => {
-      const currentUrl = this.router.url;
-      const game = this.gamesService.getGameByRoute(currentUrl);
-      
-      // Only show tutorial if we're on a game route
-      if (game) {
-        const loaded = this.tutorialService.loadTutorialForGame(game.id);
-        if (loaded && this.tutorialService.steps.length > 0) {
-          this.tutorialService.showTutorialModal();
-        } else if (attempt < maxAttempts - 1) {
-          // Retry if tutorial wasn't loaded successfully
-          this.tryShowTutorial(attempt + 1);
-        }
-      } else if (attempt < maxAttempts - 1) {
-        // Retry if game not found yet
-        this.tryShowTutorial(attempt + 1);
-      }
-    }, delay);
+  private autoShowTutorialForCurrentRoute(): void {
+    const currentUrl = this.router.url;
+    const game = this.gamesService.getGameByRoute(currentUrl);
+
+    // Auto-show only when tutorial exists for current game and tutorial isn't completed
+    this.tutorialService.autoShowForGame(game?.id);
   }
 
   closeTutorial() {

@@ -70,6 +70,35 @@ export class TutorialService {
   }
 
   /**
+   * Check whether a tutorial exists for the given game ID
+   */
+  hasTutorialForGame(gameId: string | undefined): boolean {
+    if (!gameId) {
+      return false;
+    }
+
+    return this.tutorialProviders.has(gameId);
+  }
+
+  /**
+   * Auto-show tutorial if not completed and a tutorial exists for this game.
+   * Returns true when modal is shown.
+   */
+  autoShowForGame(gameId: string | undefined): boolean {
+    if (this.isTutorialCompleted() || !gameId) {
+      return false;
+    }
+
+    const loaded = this.loadTutorialForGame(gameId);
+    if (!loaded || this.steps.length === 0) {
+      return false;
+    }
+
+    this.showTutorialModal();
+    return true;
+  }
+
+  /**
    * Check if the tutorial has been completed or skipped
    */
   isTutorialCompleted(): boolean {
