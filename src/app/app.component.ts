@@ -91,6 +91,13 @@ export class AppComponent {
 
   private autoShowTutorialForCurrentRoute(): void {
     const currentUrl = this.router.url;
+    
+    // Don't auto-show tutorial on non-game routes
+    const nonGameRoutes = ['/settings', '/home', '/login', '/admin-licenses', '/admin-accounts'];
+    if (nonGameRoutes.some(route => currentUrl.startsWith(route))) {
+      return;
+    }
+
     const game = this.gamesService.getGameByRoute(currentUrl);
 
     // Auto-show only when tutorial exists for current game and tutorial isn't completed
