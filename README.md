@@ -27,18 +27,6 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 This application uses a license-based authentication system with admin capabilities:
 
-### Default Credentials
-
-**Admin Account:**
-- Username: `admin`
-- Password: `admin123`
-- Access: Full admin panel with license generation
-
-**Demo License:**
-- Key: `TEST-LICENSE-12345DEMO`
-- Duration: 365 days
-- Access: All games
-
 ### Admin Features
 
 Admins can:
