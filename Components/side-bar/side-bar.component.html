@@ -23,7 +23,6 @@
     
     <div class="nav-divider" *ngIf="showGameNav"></div>
     <div class="nav-section-title" *ngIf="showGameNav">{{ currentGameName }}</div>
-    
     <ng-container *ngIf="showGameNav">
       <a *ngFor="let item of navigationItems" 
          [routerLink]="item.route" 
@@ -34,8 +33,20 @@
         {{ item.label }}
       </a>
     </ng-container>
+
+    <div class="nav-divider" *ngIf="isAdminUser"></div>
+    <div class="nav-section-title" *ngIf="isAdminUser && !showGameNav">Administration</div>
+    <ng-container *ngIf="isAdminUser">
+      <a routerLink="/admin-licenses" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" (click)="onNavClick()">
+        <span class="nav-icon">🔑</span> Manage Licenses
+      </a>
+      <a routerLink="/admin-accounts" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" (click)="onNavClick()">
+        <span class="nav-icon">👥</span> Manage Admins
+      </a>
+    </ng-container>
     
     <div class="nav-divider"></div>
     <a routerLink="/settings" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" (click)="onNavClick()">⚙️ Settings</a>
+    <a class="logout-button" (click)="logout()" title="Logout from application">🚪 Logout</a>
   </nav>
 </div>

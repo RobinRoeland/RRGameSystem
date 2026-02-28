@@ -1,5 +1,5 @@
 <section class="home">
-  <div class="games-grid" *ngIf="games$ | async as games">
+  <div class="games-grid" *ngIf="filteredGames$ | async as games">
     <a class="game-card" *ngFor="let game of games; trackBy: trackByGameId" [routerLink]="game.route">
       <div class="game-card__icon">{{ game.icon }}</div>
       <div class="game-card__content">
@@ -13,5 +13,10 @@
         <div class="game-card__cta">Open</div>
       </div>
     </a>
+    
+    <div class="no-games-message" *ngIf="games.length === 0">
+      <h2>No Games Available</h2>
+      <p>Your license doesn't have access to any games yet. Please contact an administrator.</p>
+    </div>
   </div>
 </section>

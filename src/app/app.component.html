@@ -1,5 +1,5 @@
-<side-bar></side-bar>
-<div class="page">
+<side-bar *ngIf="isAuthenticated$ | async"></side-bar>
+<div class="page" [class.full-width]="!(isAuthenticated$ | async)">
   <div class="content">
     <div class="header" *ngIf="pageTitle">
       <h1>{{ pageTitle }}</h1>
@@ -9,4 +9,4 @@
 </div>
 
 <!-- Tutorial Modal -->
-<tutorial-modal *ngIf="showTutorial" (close)="closeTutorial()"></tutorial-modal>
+<tutorial-modal *ngIf="showTutorial && (isAuthenticated$ | async)" (close)="closeTutorial()"></tutorial-modal>

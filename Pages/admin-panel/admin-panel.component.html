@@ -1,0 +1,196 @@
+<div class="admin-panel">
+  <div class="admin-header">
+    <div class="header-content">
+      <h1>🔐 Admin Panel</h1>
+      <p class="welcome-text">Welcome, {{ currentAdminUsername }}!</p>
+    </div>
+    <button class="logout-button" (click)="logout()">🚪 Logout</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button 
+      class="tab-button"
+      [class.active]="activeTab === 'licenses'"
+      (click)="switchTab('licenses')">
+      🔑 Manage Licenses
+    </button>
+    <button 
+      class="tab-button"
+      [class.active]="activeTab === 'admins'"
+      (click)="switchTab('admins')"
+      *ngIf="isCurrentAdminSuperAdmin">
+      👥 Manage Admins
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div class="success-message" *ngIf="successMessage">
+    ✓ {{ successMessage }}
+  </div>
+  <div class="error-message" *ngIf="errorMessage">
+    ✕ {{ errorMessage }}
+  </div>
+
+  <!-- Licenses Tab -->
+  <div class="admin-content" *ngIf="activeTab === 'licenses'">
+    <div class="section">
+      <h2>Generate New License</h2>
+      <form [formGroup]="licenseForm" (ngSubmit)="generateLicense()" class="generate-form">
+        <div class="form-group">
+          <label for="expirationDays">Expiration Days:</label>
+          <input
+            id="expirationDays"
+            type="number"
+            formControlName="expirationDays"
+            min="1"
+            max="365"
+            class="form-input"
+            [class.error]="expirationDaysControl?.invalid && expirationDaysControl?.touched"
+          />
+          <small>How many days should this license be valid for? (1-365)</small>
+        </div>
+        <button type="submit" class="generate-button" [disabled]="licenseForm.invalid">
+          Generate License
+        </button>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>Generated Licenses</h2>
+      <div class="table-container" *ngIf="generatedLicenses.length > 0; else noLicenses">
+        <table class="licenses-table">
+          <thead>
+            <tr>
+              <th>License Key</th>
+              <th>Created By</th>
+              <th>Duration (Days)</th>
+              <th>Created At</th>
+              <th>Status</th>
+              <th>Usage</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let license of generatedLicenses" [class.inactive]="!license.isActive">
+              <td class="license-key">
+                <code>{{ license.key }}</code>
+                <button 
+                  class="copy-button"
+                  [class.copied]="copiedLicenseKey === license.key"
+                  (click)="copyToClipboard(license.key)"
+                  title="Copy to clipboard">
+                  {{ copiedLicenseKey === license.key ? '✓ Copied' : '📋 Copy' }}
+                </button>
+              </td>
+              <td>{{ license.createdBy }}</td>
+              <td>{{ license.expirationDays }} days</td>
+              <td>{{ license.createdAt | date: 'short' }}</td>
+              <td>
+                <span class="status" [class.active]="license.isActive" [class.revoked]="!license.isActive">
+                  {{ license.isActive ? '✓ Active' : '✕ Revoked' }}
+                </span>
+              </td>
+              <td>{{ getUsageStatus(license) }}</td>
+              <td>
+                <button 
+                  class="revoke-button"
+                  (click)="revokeLicense(license.key)"
+                  [disabled]="!license.isActive"
+                  *ngIf="license.isActive">
+                  Revoke
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noLicenses>
+        <div class="empty-state">
+          <p>No licenses generated yet.</p>
+          <p>Use the form above to create your first license.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Admins Tab -->
+  <div class="admin-content" *ngIf="activeTab === 'admins' && isCurrentAdminSuperAdmin">
+    <div class="section">
+      <h2>Create New Admin Account</h2>
+      <form [formGroup]="adminForm" (ngSubmit)="createAdminAccount()" class="admin-form">
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            placeholder="Admin username"
+            class="form-input"
+            [class.error]="usernameControl?.invalid && usernameControl?.touched"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            placeholder="Admin password"
+            class="form-input"
+            [class.error]="passwordControl?.invalid && passwordControl?.touched"
+          />
+        </div>
+        <div class="form-group">
+          <label for="role">Role:</label>
+          <select id="role" formControlName="role" class="form-input">
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="create-button" [disabled]="adminForm.invalid">
+          Create Admin Account
+        </button>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>Admin Accounts</h2>
+      <div class="table-container" *ngIf="adminAccounts.length > 0; else noAdmins">
+        <table class="admins-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let admin of adminAccounts">
+              <td>
+                {{ admin.username }}
+                <span class="current-badge" *ngIf="admin.username === currentAdminUsername">(You)</span>
+              </td>
+              <td><span class="role-badge" [class.super]="admin.role === 'super_admin'">{{ getRoleLabel(admin.role) }}</span></td>
+              <td>{{ admin.createdAt | date: 'short' }}</td>
+              <td>
+                <button 
+                  class="delete-button"
+                  (click)="deleteAdminAccount(admin.username)"
+                  [disabled]="admin.username === currentAdminUsername">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noAdmins>
+        <div class="empty-state">
+          <p>No admin accounts found.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
