@@ -91,17 +91,9 @@ Key features:
 - Browser-based connection (Chrome, Edge, Opera)
 - Easy toggle in application settings
 
-## 📦 Deployment
-
 ### GitHub Pages
 
-This application is configured for GitHub Pages deployment:
-
-```bash
-npm run build:ghpages
-```
-
-This builds the application with the correct base href for GitHub Pages. The output will be in `dist/slot-machine/browser/`.
+This application is configured for GitHub Pages deployment
 
 **Important Notes:**
 - ✅ Works with client-side IndexedDB storage (no backend needed)
