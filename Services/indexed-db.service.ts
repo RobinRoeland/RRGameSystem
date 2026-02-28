@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 export interface AdminAccount {
   id?: number;
@@ -13,13 +13,14 @@ export interface GeneratedLicense {
   id?: number;
   key: string;
   created_at: string;
-  expiration_days: number;
+  expiration_days?: number; // Optional - undefined for permanent licenses
   created_by: string;
   is_active: boolean;
   used_at?: string;
   used_by?: string;
   allowed_games?: string;
   updated_at: string;
+  isAdmin?: boolean; // Flag to indicate if this is an admin license
 }
 
 @Injectable({
@@ -86,23 +87,6 @@ export class IndexedDBService {
         updated_at: new Date().toISOString()
       };
       await this.createAdminAccount(defaultAdmin);
-    }
-
-    // Check if demo license exists
-    const licenses = await this.getAllLicenses();
-    const demoExists = licenses.some(l => l.key === 'TEST-LICENSE-12345DEMO');
-    if (!demoExists) {
-      // Create demo license
-      const demoLicense: GeneratedLicense = {
-        key: 'TEST-LICENSE-12345DEMO',
-        created_at: new Date().toISOString(),
-        expiration_days: 365,
-        created_by: 'system',
-        is_active: true,
-        allowed_games: '',
-        updated_at: new Date().toISOString()
-      };
-      await this.createLicense(demoLicense);
     }
   }
 
@@ -254,3 +238,4 @@ export class IndexedDBService {
     await this.updateLicense(license);
   }
 }
+

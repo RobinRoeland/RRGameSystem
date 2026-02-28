@@ -93,7 +93,6 @@ export class SlotMachineControlsComponent implements OnInit, OnDestroy {
 
       // Subscribe to Arduino roll requests
       this.arduinoService.rollRequest$.pipe(takeUntil(this.destroy$)).subscribe(() => {
-        console.log('[Arduino rollRequest] Received');
         if (!this.rollButtonDisabled && this.items && this.items.length > 0) {
           this.onRollClick();
         }

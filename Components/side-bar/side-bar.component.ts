@@ -121,10 +121,10 @@ export class SideBarComponent implements OnInit, OnDestroy {
     }
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
     // Log out both user and admin sessions
     this.licenseService.logout();
-    this.adminService.logoutAdmin();
+    await this.adminService.logoutAdmin();
     this.router.navigate(['/login']);
   }
 

@@ -14,16 +14,21 @@ import { TestGameComponent } from '../../Pages/test-game/test-game.component';
 import { LicenseService } from '../../Services/license.service';
 import { AdminService } from '../../Services/admin.service';
 
-const authGuard = () => {
+const authGuard = async () => {
   const licenseService = inject(LicenseService);
+  const adminService = inject(AdminService);
   const router = inject(Router);
   
   // Check if user has a valid license (including admins with permanent licenses)
   const isAuth = licenseService.getIsAuthenticated();
-  console.log('Auth guard: License state =', isAuth);
-  
+
   if (isAuth) {
-    console.log('Guard: Access granted');
+    return true;
+  }
+
+  // Attempt to restore admin session from IndexedDB before redirecting
+  const adminRestored = await adminService.ensureAdminSessionRestored();
+  if (adminRestored) {
     return true;
   }
   
@@ -31,61 +36,55 @@ const authGuard = () => {
   const userAuth = localStorage.getItem('rr_game_authenticated') === 'true';
   const userLicense = localStorage.getItem('rr_game_license') !== null;
   
-  console.log('Auth guard: localStorage check - auth:', userAuth, 'license:', userLicense ? 'exists' : 'missing');
-  
   if (userAuth && userLicense) {
-    console.log('Guard: Reloading service state from localStorage');
     licenseService.loadAuthenticationState();
-    return true;
+    return licenseService.getIsAuthenticated();
   }
   
-  console.log('Guard: Access denied, redirecting to login');
-  router.navigate(['/login']);
-  return false;
+  return router.parseUrl('/login');
 };
 
 const gameAccessGuard = (gameId: string) => {
-  return () => {
+  return async () => {
     const licenseService = inject(LicenseService);
+    const adminService = inject(AdminService);
     const router = inject(Router);
     
     // Check if user is authenticated first
     if (!licenseService.getIsAuthenticated()) {
-      console.log('Game access guard: User not authenticated');
-      router.navigate(['/login']);
-      return false;
+      const adminRestored = await adminService.ensureAdminSessionRestored();
+      if (!adminRestored && !licenseService.getIsAuthenticated()) {
+        return router.parseUrl('/login');
+      }
     }
     
     // Check if user has access to this specific game (admins have permanent licenses with all access)
     const hasAccess = licenseService.hasGameAccess(gameId);
-    console.log(`Game access guard: User access to '${gameId}' =`, hasAccess);
     
     if (!hasAccess) {
-      console.log('Game access guard: Access denied, redirecting to home');
-      router.navigate(['/home']);
-      return false;
+      return router.parseUrl('/home');
     }
     
     return true;
   };
 };
 
-const adminGuard = () => {
+const adminGuard = async () => {
   const adminService = inject(AdminService);
-  const router = inject(Router);
   
-  // Check if admin (admin status is now stored in the license with isAdmin flag)
-  const isAdmin = adminService.getIsAdminLoggedIn();
-  console.log('Admin guard: Admin status =', isAdmin);
-  
-  if (isAdmin) {
-    console.log('Guard: Admin authenticated');
+  // Check primary: admin service check
+  if (adminService.getIsAdminLoggedIn()) {
     return true;
   }
-  
-  console.log('Guard: Not an admin, redirecting to login');
-  router.navigate(['/login']);
-  return false;
+
+  const restored = await adminService.ensureAdminSessionRestored();
+  if (restored) {
+    return true;
+  }
+
+  // Not logged in as admin
+  const router = inject(Router);
+  return router.parseUrl('/login');
 };
 
 export const routes: Routes = [
