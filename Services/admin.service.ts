@@ -146,7 +146,7 @@ export class AdminService {
       if (license && license.isAdmin) {
         // Extract username from license key (format: ADMIN-{USERNAME}-PERMANENT)
         const match = license.key.match(/^ADMIN-(.+)-PERMANENT$/);
-        return match ? match[1] : null;
+        return match ? match[1].toLowerCase() : null;
       }
     }
     return null;
@@ -283,14 +283,16 @@ export class AdminService {
     }
     
     // Verify current user is super_admin
-    const currentAdmin = this.adminAccountsSubject.value.find(acc => acc.username === currentAdminUsername);
+    const normalizedCurrentAdmin = currentAdminUsername.toLowerCase();
+    const currentAdmin = this.adminAccountsSubject.value.find(acc => acc.username.toLowerCase() === normalizedCurrentAdmin);
     if (!currentAdmin || currentAdmin.role !== 'super_admin') {
       return false;
     }
 
     try {
       // Check if username already exists
-      const existing = await this.indexedDB.getAdminAccountByUsername(username);
+      const normalizedNewUsername = username.trim().toLowerCase();
+      const existing = this.adminAccountsSubject.value.find(acc => acc.username.toLowerCase() === normalizedNewUsername);
       if (existing) {
         console.error('Username already exists');
         return false;
@@ -327,13 +329,14 @@ export class AdminService {
     }
     
     // Verify current user is super_admin
-    const currentAdmin = this.adminAccountsSubject.value.find(acc => acc.username === currentAdminUsername);
+    const normalizedCurrentAdmin = currentAdminUsername.toLowerCase();
+    const currentAdmin = this.adminAccountsSubject.value.find(acc => acc.username.toLowerCase() === normalizedCurrentAdmin);
     if (!currentAdmin || currentAdmin.role !== 'super_admin') {
       return false;
     }
 
     // Can't delete yourself
-    if (username === currentAdminUsername) {
+    if (username.toLowerCase() === normalizedCurrentAdmin) {
       return false;
     }
 
