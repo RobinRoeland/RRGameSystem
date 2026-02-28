@@ -145,7 +145,7 @@ export const routes: Routes = [
     path: 'settings',
     component: SettingsComponent,
     title: 'Settings',
-    canActivate: [gameAccessGuard('slot-machine')]
+    canActivate: [authGuard]
   },
   { 
     path: '', 
