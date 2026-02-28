@@ -45,7 +45,7 @@ export class AdminAccountsComponent implements OnInit, OnDestroy {
         this.adminAccounts = accounts;
         
         // Verify current admin is still super_admin
-        const currentAdmin = accounts.find(acc => acc.username === this.currentAdminUsername);
+        const currentAdmin = accounts.find(acc => acc.username.toUpperCase() === this.currentAdminUsername?.toUpperCase());
         if (!currentAdmin || currentAdmin.role !== 'super_admin') {
           this.router.navigate(['/home']);
           return;
@@ -73,7 +73,7 @@ export class AdminAccountsComponent implements OnInit, OnDestroy {
   }
 
   get isCurrentAdminSuperAdmin(): boolean {
-    const currentAdmin = this.adminAccounts.find(acc => acc.username === this.currentAdminUsername);
+    const currentAdmin = this.adminAccounts.find(acc => acc.username.toLowerCase() === this.currentAdminUsername?.toLowerCase());
     return currentAdmin?.role === 'super_admin';
   }
 

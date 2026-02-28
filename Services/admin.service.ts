@@ -56,6 +56,7 @@ export class AdminService {
    */
   setLicenseService(licenseService: any): void {
     this.licenseService = licenseService;
+    this.loadAdminState();
   }
 
   /**
@@ -64,12 +65,61 @@ export class AdminService {
   loadAdminState(): void {
     this.loadAdminAccounts();
     this.loadGeneratedLicenses();
+    this.restoreAdminLicenseFromDB(); // Restore admin license if it exists in DB
     
     // Update isAdminLoggedIn$ based on current license
     if (this.licenseService) {
       const license = this.licenseService.getCurrentLicense();
       this.isAdminLoggedInSubject.next(!!license && license.isAdmin === true);
     }
+  }
+
+  /**
+   * Restore admin license from IndexedDB if it exists
+   */
+  private async restoreAdminLicenseFromDB(): Promise<boolean> {
+    try {
+      const licenses = await this.indexedDB.getAllLicenses();
+      // Look for any active admin license from the DB that is still within session timeout
+      const adminLicense = licenses.find((license) => {
+        if (!(license.isAdmin === true && license.is_active === true)) {
+          return false;
+        }
+
+        const sessionAnchor = license.used_at || license.updated_at || license.created_at;
+        if (!sessionAnchor) {
+          return false;
+        }
+
+        const lastLoginMs = new Date(sessionAnchor).getTime();
+        if (Number.isNaN(lastLoginMs)) {
+          return false;
+        }
+
+        return true;
+      });
+      
+      if (adminLicense && this.licenseService) {
+        this.licenseService.setCurrentLicense(adminLicense);
+        this.isAdminLoggedInSubject.next(this.getIsAdminLoggedIn());
+        return this.getIsAdminLoggedIn();
+      }
+
+      this.isAdminLoggedInSubject.next(false);
+      return false;
+    } catch (error) {
+      console.error('Error restoring admin license from DB:', error);
+      this.isAdminLoggedInSubject.next(false);
+      return false;
+    }
+  }
+
+  async ensureAdminSessionRestored(): Promise<boolean> {
+    if (this.getIsAdminLoggedIn()) {
+      return true;
+    }
+
+    return this.restoreAdminLicenseFromDB();
   }
 
   /**
@@ -90,8 +140,10 @@ export class AdminService {
   private async loadGeneratedLicenses(): Promise<void> {
     try {
       const licenses = await this.indexedDB.getAllLicenses();
+      const nonAdminLicenses = licenses.filter(license => !license.isAdmin);
+
       // Format database response to match interface
-      const formattedLicenses = licenses.map(license => ({
+      const formattedLicenses = nonAdminLicenses.map(license => ({
         key: license.key,
         createdAt: license.created_at,
         expirationDays: license.expiration_days,
@@ -114,13 +166,55 @@ export class AdminService {
     const admin = await this.indexedDB.getAdminAccountByUsername(username);
     
     if (admin && admin.password === password) {
-      // Create a permanent license with all game access and admin flag
+      // Admin account is only an alternate way to issue/refresh a permanent admin license
+      // Actual authentication state is always derived from the active license
       if (this.licenseService) {
-        this.licenseService.createAdminLicense(username);
-        this.isAdminLoggedInSubject.next(true);
+        try {
+          const adminLicenseKey = `ADMIN-${username.toUpperCase()}-PERMANENT`;
+          
+          // Create the license object for IndexedDB
+          const adminLicense: IDBGeneratedLicense = {
+            key: adminLicenseKey,
+            created_at: new Date().toISOString(),
+            expiration_days: undefined,
+            created_by: 'system',
+            is_active: true,
+            used_at: new Date().toISOString(),
+            used_by: username,
+            allowed_games: undefined,
+            updated_at: new Date().toISOString(),
+            isAdmin: true
+          };
+          
+          // Check if this admin license already exists in IndexedDB
+          const existingLicense = await this.indexedDB.getLicenseByKey(adminLicenseKey);
+          if (!existingLicense) {
+            await this.indexedDB.createLicense(adminLicense);
+            this.licenseService.setCurrentLicense(adminLicense);
+          } else {
+            existingLicense.is_active = true;
+            existingLicense.used_at = new Date().toISOString();
+            existingLicense.used_by = username;
+            existingLicense.isAdmin = true;
+            existingLicense.updated_at = new Date().toISOString();
+            await this.indexedDB.updateLicense(existingLicense);
+            this.licenseService.setCurrentLicense(existingLicense);
+          }
+          
+          // Update admin state from the active license
+          this.isAdminLoggedInSubject.next(this.getIsAdminLoggedIn());
+          
+          // Reload licenses from IndexedDB
+          await this.loadGeneratedLicenses();
+          
+          return true;
+        } catch (error) {
+          console.error('Error during admin login:', error);
+          return false;
+        }
       }
       
-      return true;
+      return false;
     }
     
     return false;
@@ -129,11 +223,22 @@ export class AdminService {
   /**
    * Admin logout - also clears the license
    */
-  logoutAdmin(): void {
+  async logoutAdmin(): Promise<void> {
     // Clear the license (which will also clear admin status)
     this.isAdminLoggedInSubject.next(false);
     if (this.licenseService) {
       this.licenseService.logout();
+    }
+    
+    // Also remove the admin license from IndexedDB
+    try {
+      const licenses = await this.indexedDB.getAllLicenses();
+      const adminLicense = licenses.find(l => l.isAdmin === true);
+      if (adminLicense && adminLicense.key) {
+        await this.indexedDB.revokeLicense(adminLicense.key);
+      }
+    } catch (error) {
+      console.error('Error removing admin license from DB:', error);
     }
   }
 
@@ -156,9 +261,12 @@ export class AdminService {
    * Check if admin is logged in (by checking license admin flag)
    */
   getIsAdminLoggedIn(): boolean {
+    // direct license service check
     if (this.licenseService) {
       const license = this.licenseService.getCurrentLicense();
-      return !!(license && license.isAdmin && license.isActive);
+      if (license && license.isAdmin && license.isActive) {
+        return true;
+      }
     }
     return false;
   }

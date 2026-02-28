@@ -1,13 +1,14 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { StorageService } from './storage.service';
 import { AdminService } from './admin.service';
 
 export interface License {
   key: string;
-  expirationDate: string;
+  expirationDate?: string; // Optional - undefined means permanent license
   isActive: boolean;
-  expirationDays: number;
+  expirationDays?: number; // Optional - undefined means permanent license
+  lastLoginAt?: string; // Session timeout is calculated from this timestamp
   allowedGames?: string[]; // Array of game IDs this license can access (undefined = all games)
   isAdmin?: boolean; // Flag indicating this is an admin license
 }
@@ -18,6 +19,7 @@ export interface License {
 export class LicenseService {
   private readonly STORAGE_KEY = 'rr_game_license';
   private readonly AUTH_KEY = 'rr_game_authenticated';
+  private readonly SESSION_TIMEOUT_MS = 24 * 60 * 60 * 1000; // 24 hours from last login
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
   
@@ -42,7 +44,14 @@ export class LicenseService {
     
     if (isAuth && licensedData) {
       try {
-        const license = JSON.parse(licensedData);
+        const license = JSON.parse(licensedData) as License;
+
+        // Backward compatibility: older sessions may not have lastLoginAt
+        if (license && !license.lastLoginAt) {
+          license.lastLoginAt = new Date().toISOString();
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(license));
+        }
+
         if (this.isLicenseValid(license)) {
           this.isAuthenticatedSubject.next(true);
           this.currentLicenseSubject.next(license);
@@ -76,19 +85,18 @@ export class LicenseService {
         expirationDate: expirationDate.toISOString(),
         isActive: true,
         expirationDays: generatedLicense.expirationDays || 30,
+        lastLoginAt: new Date().toISOString(),
         allowedGames: generatedLicense.allowedGames
       };
 
-      // Save license to storage
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(license));
-      localStorage.setItem(this.AUTH_KEY, 'true');
-      
+      const activated = this.activateLicense(license, true);
+      if (!activated) {
+        return false;
+      }
+
       // Mark as used in admin service
       this.adminService.markLicenseAsUsed(licenseKey);
-      
-      // Update state
-      this.isAuthenticatedSubject.next(true);
-      this.currentLicenseSubject.next(license);
+
       return true;
     }
     
@@ -104,9 +112,46 @@ export class LicenseService {
     if (!license.isActive) {
       return false;
     }
+
+    if (!this.isSessionValid(license.lastLoginAt)) {
+      return false;
+    }
+    
+    // If expirationDate is undefined, it''s a permanent license
+    if (!license.expirationDate) {
+      return true;
+    }
     
     const expirationDate = new Date(license.expirationDate);
     return expirationDate > new Date();
+  }
+
+  private isSessionValid(lastLoginAt?: string): boolean {
+    if (!lastLoginAt) {
+      return false;
+    }
+
+    const lastLoginMs = new Date(lastLoginAt).getTime();
+    if (Number.isNaN(lastLoginMs)) {
+      return false;
+    }
+
+    return Date.now() - lastLoginMs <= this.SESSION_TIMEOUT_MS;
+  }
+
+  private activateLicense(license: License, persistToStorage: boolean): boolean {
+    if (!this.isLicenseValid(license)) {
+      return false;
+    }
+
+    if (persistToStorage) {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(license));
+      localStorage.setItem(this.AUTH_KEY, 'true');
+    }
+
+    this.isAuthenticatedSubject.next(true);
+    this.currentLicenseSubject.next(license);
+    return true;
   }
 
   /**
@@ -128,8 +173,9 @@ export class LicenseService {
    */
   getTimeRemaining(): number {
     const license = this.currentLicenseSubject.value;
-    if (!license) {
-      return 0;
+    if (!license || !license.expirationDate) {
+      // No license or permanent license (no expiration)
+      return license ? 999999 : 0;
     }
     
     const expirationDate = new Date(license.expirationDate);
@@ -185,6 +231,7 @@ export class LicenseService {
       expirationDate: new Date(2099, 11, 31).toISOString(), // Permanent (far future)
       isActive: true,
       expirationDays: 999999,
+      lastLoginAt: new Date().toISOString(),
       allowedGames: undefined, // Access to all games
       isAdmin: true // Mark as admin license
     };
@@ -196,5 +243,28 @@ export class LicenseService {
     // Update state
     this.isAuthenticatedSubject.next(true);
     this.currentLicenseSubject.next(license);
+  }
+
+  /**
+   * Set the current license without saving to localStorage
+   * Used by AdminService when loading admin licenses from IndexedDB only
+   * @param license The license to set
+   */
+  setCurrentLicense(license: License | any): void {
+    const normalizedLicense: License = {
+      key: license.key,
+      expirationDate: license.expirationDate,
+      expirationDays: license.expirationDays,
+      isActive: license.isActive ?? license.is_active ?? false,
+      lastLoginAt: license.lastLoginAt ?? license.used_at ?? license.updated_at ?? license.created_at,
+      allowedGames: license.allowedGames,
+      isAdmin: license.isAdmin ?? false
+    };
+
+    const activated = this.activateLicense(normalizedLicense, false);
+    if (!activated) {
+      this.isAuthenticatedSubject.next(false);
+      this.currentLicenseSubject.next(null);
+    }
   }
 }

@@ -37,7 +37,9 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    await this.adminService.ensureAdminSessionRestored();
+
     // If already authenticated as user, redirect to home
     if (this.licenseService.getIsAuthenticated()) {
       this.router.navigate(['/home']);
@@ -66,12 +68,9 @@ export class LoginComponent implements OnInit {
     this.errorMessage = '';
 
     const licenseKey = this.userForm.get('licenseKey')?.value.trim();
-    console.log('=== USER LOGIN ATTEMPT ===');
-    console.log('License key entered:', licenseKey);
 
     // Validate license
     const loginResult = this.licenseService.login(licenseKey);
-    console.log('License validation result:', loginResult);
     
     if (!loginResult) {
       this.errorMessage = 'Invalid license key. Please check and try again.';
@@ -80,17 +79,9 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    // Check state after login
-    console.log('After login:');
-    console.log('- Service authenticated:', this.licenseService.getIsAuthenticated());
-    console.log('- localStorage rr_game_authenticated:', localStorage.getItem('rr_game_authenticated'));
-    console.log('- localStorage rr_game_license exists:', localStorage.getItem('rr_game_license') !== null);
-
     // License valid, attempt navigation
     try {
-      console.log('Navigating to /home...');
       const navigated = await this.router.navigate(['/home']);
-      console.log('Navigation result:', navigated);
       
       if (!navigated) {
         this.errorMessage = 'Navigation blocked by auth guard. Please refresh the page.';
@@ -115,12 +106,9 @@ export class LoginComponent implements OnInit {
 
     const username = this.adminForm.get('username')?.value.trim();
     const password = this.adminForm.get('password')?.value;
-    console.log('=== ADMIN LOGIN ATTEMPT ===');
-    console.log('Username entered:', username);
 
     // Validate admin credentials (now async)
     const loginResult = await this.adminService.loginAdmin(username, password);
-    console.log('Admin login result:', loginResult);
     
     if (!loginResult) {
       this.errorMessage = 'Invalid admin credentials. Please try again.';
@@ -129,16 +117,9 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    // Check state after login
-    console.log('After admin login:');
-    console.log('- Service authenticated:', this.adminService.getIsAdminLoggedIn());
-    console.log('- localStorage rr_game_current_admin exists:', localStorage.getItem('rr_game_current_admin') !== null);
-
     // Credentials valid, attempt navigation
     try {
-      console.log('Navigating to /home...');
       const navigated = await this.router.navigate(['/home']);
-      console.log('Navigation result:', navigated);
       
       if (!navigated) {
         this.errorMessage = 'Navigation blocked by auth guard. Please refresh the page.';
