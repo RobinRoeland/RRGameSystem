@@ -1,13 +1,15 @@
 import { Component } from '@angular/core';
 import { SideBarComponent } from '../../Components/side-bar/side-bar.component'
 import { RouterOutlet, Router, NavigationEnd, ActivatedRoute } from "@angular/router";
-import { filter, map } from 'rxjs/operators';
+import { filter, map, merge } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../Services/theme.service';
 import { SettingsService } from '../../Services/settings.service';
 import { TutorialService } from '../../Services/tutorial.service';
 import { GamesService } from '../../Services/games.service';
 import { TutorialModalComponent } from '../../Components/tutorial-modal/tutorial-modal.component';
+import { LicenseService } from '../../Services/license.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -24,6 +26,7 @@ import { TutorialModalComponent } from '../../Components/tutorial-modal/tutorial
 export class AppComponent {
   pageTitle: string = '';
   showTutorial: boolean = false;
+  isAuthenticated$: Observable<boolean>;
 
   constructor(
     private router: Router,
@@ -31,9 +34,12 @@ export class AppComponent {
     private themeService: ThemeService,
     private settingsService: SettingsService,
     private tutorialService: TutorialService,
-    private gamesService: GamesService
+    private gamesService: GamesService,
+    private licenseService: LicenseService
   ) {
-    // Initialize theme on app startup
+    // Get authentication state - admins have permanent licenses with all access
+    this.isAuthenticated$ = this.licenseService.isAuthenticated$;
+
     const settings = this.settingsService.getSettings();
     if (settings.colorTheme === 'custom' && settings.customTheme.gradientColors && settings.customTheme.gradientColors.length > 0) {
       // Apply saved custom theme with all colors

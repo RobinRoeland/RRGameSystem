@@ -1,0 +1,115 @@
+<div class="admin-section">
+  <div class="section-header">
+    <h2>🔑 Manage Licenses</h2>
+  </div>
+
+  <!-- Messages -->
+  <div class="success-message" *ngIf="successMessage">
+    ✓ {{ successMessage }}
+  </div>
+  <div class="error-message" *ngIf="errorMessage">
+    ✕ {{ errorMessage }}
+  </div>
+
+  <div class="section">
+    <h3>Generate New License</h3>
+    <form [formGroup]="licenseForm" (ngSubmit)="generateLicense()" class="generate-form">
+      <div class="form-group">
+        <label for="expirationDays">Expiration Days:</label>
+        <input
+          id="expirationDays"
+          type="number"
+          formControlName="expirationDays"
+          min="1"
+          max="365"
+          class="form-input"
+          [class.error]="expirationDaysControl?.invalid && expirationDaysControl?.touched"
+        />
+        <small>How many days should this license be valid for? (1-365)</small>
+      </div>
+
+      <div class="form-group">
+        <label>Game Access:</label>
+        <div class="game-selection">
+          <div class="game-option" *ngFor="let game of availableGames">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [checked]="isGameSelected(game.id)"
+                (change)="toggleGameSelection(game.id)"
+              />
+              <span class="game-icon">{{ game.icon }}</span>
+              <span class="game-name">{{ game.name }}</span>
+            </label>
+          </div>
+        </div>
+        <small>Leave all unchecked to grant access to all games</small>
+      </div>
+
+      <button type="submit" class="generate-button" [disabled]="licenseForm.invalid">
+        Generate License
+      </button>
+    </form>
+  </div>
+
+  <div class="section">
+    <h3>Generated Licenses</h3>
+    <div class="table-container" *ngIf="generatedLicenses.length > 0; else noLicenses">
+      <table class="licenses-table">
+        <thead>
+          <tr>
+            <th>License Key</th>
+            <th>Created By</th>
+            <th>Duration (Days)</th>
+            <th>Game Access</th>
+            <th>Created At</th>
+            <th>Status</th>
+            <th>Usage</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let license of generatedLicenses" [class.inactive]="!license.isActive">
+            <td>
+                <div class="license-key">
+                    <code>{{ license.key }}</code>
+                    <button 
+                        class="copy-button"
+                        [class.copied]="copiedLicenseKey === license.key"
+                        (click)="copyToClipboard(license.key)"
+                        title="Copy to clipboard">
+                        {{ copiedLicenseKey === license.key ? '✓ Copied' : '📋 Copy' }}
+                    </button>
+                </div>
+            </td>
+            <td>{{ license.createdBy }}</td>
+            <td>{{ license.expirationDays }} days</td>
+            <td class="game-access-cell">{{ getGameAccessDisplay(license) }}</td>
+            <td>{{ license.createdAt | date: 'short' }}</td>
+            <td>
+              <span class="status" [class.active]="license.isActive" [class.revoked]="!license.isActive">
+                {{ license.isActive ? '✓ Active' : '✕ Revoked' }}
+              </span>
+            </td>
+            <td>{{ getUsageStatus(license) }}</td>
+            <td>
+              <button 
+                class="revoke-button"
+                (click)="revokeLicense(license.key)"
+                [disabled]="!license.isActive"
+                *ngIf="license.isActive">
+                Revoke
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #noLicenses>
+      <div class="empty-state">
+        <p>No licenses generated yet.</p>
+        <p>Use the form above to create your first license.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

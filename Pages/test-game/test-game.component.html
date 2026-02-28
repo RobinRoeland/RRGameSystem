@@ -1,0 +1,38 @@
+<div class="test-game-container">
+  <div class="game-header">
+    <h1>🎮 Test Game</h1>
+    <p class="game-description">A simple test game to demonstrate license-based access control</p>
+  </div>
+
+  <div class="game-content" *ngIf="!gameStarted">
+    <div class="welcome-card">
+      <h2>Welcome!</h2>
+      <p>This is a test game that can be used to demonstrate the license system.</p>
+      <p>Admins can restrict user access to specific games when creating licenses.</p>
+      <button class="start-button" (click)="startGame()">Start Game</button>
+    </div>
+  </div>
+
+  <div class="game-content" *ngIf="gameStarted">
+    <div class="game-card">
+      <h2>Game Active</h2>
+      <div class="score-display">
+        <span class="score-label">Score:</span>
+        <span class="score-value">{{ currentScore }}</span>
+      </div>
+      
+      <div class="game-actions">
+        <button class="action-button" (click)="incrementScore()">
+          ➕ Add Points
+        </button>
+        <button class="reset-button" (click)="resetGame()">
+          🔄 Reset Game
+        </button>
+      </div>
+      
+      <div class="game-info">
+        <p>Click "Add Points" to increase your score!</p>
+      </div>
+    </div>
+  </div>
+</div>

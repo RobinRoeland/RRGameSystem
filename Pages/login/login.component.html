@@ -1,0 +1,109 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>RR Game System</h1>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab-button"
+        [class.active]="activeTab === 'user'"
+        (click)="switchTab('user')">
+        👤 User Login
+      </button>
+      <button 
+        class="tab-button"
+        [class.active]="activeTab === 'admin'"
+        (click)="switchTab('admin')">
+        🔐 Admin Login
+      </button>
+    </div>
+
+    <!-- User Login Tab -->
+    <form *ngIf="activeTab === 'user'" [formGroup]="userForm" (ngSubmit)="onUserLogin()" class="login-form">
+      <div class="form-group">
+        <label for="licenseKey">License Key:</label>
+        <div class="input-wrapper">
+          <input
+            id="licenseKey"
+            type="text"
+            formControlName="licenseKey"
+            placeholder="Enter your license key"
+            class="license-input"
+            [class.error]="licenseKeyControl?.invalid && licenseKeyControl?.touched"
+            (input)="licenseKeyControl?.markAsTouched()"
+          />
+        </div>
+        <div class="form-help-text">
+          <small>Ask your administrator for a license key</small>
+        </div>
+        <div class="error-message" *ngIf="errorMessage && activeTab === 'user'">
+          {{ errorMessage }}
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="userForm.invalid || isLoading"
+      >
+        <span *ngIf="!isLoading">Login</span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <span class="spinner"></span> Authenticating...
+        </span>
+      </button>
+    </form>
+
+    <!-- Admin Login Tab -->
+    <form *ngIf="activeTab === 'admin'" [formGroup]="adminForm" (ngSubmit)="onAdminLogin()" class="login-form">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input
+          id="username"
+          type="text"
+          formControlName="username"
+          placeholder="Admin username"
+          class="form-input"
+          [class.error]="usernameControl?.invalid && usernameControl?.touched"
+          (input)="usernameControl?.markAsTouched()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Admin password"
+          class="form-input"
+          [class.error]="passwordControl?.invalid && passwordControl?.touched"
+          (input)="passwordControl?.markAsTouched()"
+        />
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage && activeTab === 'admin'">
+        {{ errorMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="adminForm.invalid || isLoading"
+      >
+        <span *ngIf="!isLoading">Login to Admin</span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <span class="spinner"></span> Authenticating...
+        </span>
+      </button>
+    </form>
+
+    <div class="login-info" *ngIf="activeTab === 'user'">
+      <p class="info-title">❓ Need Help?</p>
+      <p class="info-text">
+        If you don't have a license key, contact your system administrator to request one.
+      </p>
+    </div>
+  </div>
+</div>

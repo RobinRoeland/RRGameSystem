@@ -2,6 +2,8 @@ import { Component, HostBinding, OnInit, OnDestroy, HostListener, Inject, PLATFO
 import { RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { SettingsService } from '../../Services/settings.service';
 import { GamesService, NavItem } from '../../Services/games.service';
+import { LicenseService } from '../../Services/license.service';
+import { AdminService } from '../../Services/admin.service';
 import { AsyncPipe, isPlatformBrowser, CommonModule } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
 import { map, filter } from 'rxjs/operators';
@@ -21,8 +23,10 @@ export class SideBarComponent implements OnInit, OnDestroy {
   navigationItems: NavItem[] = [];
   currentGameName: string = '';
   showGameNav: boolean = false;
+  isAdminUser: boolean = false;
   private routerSubscription?: Subscription;
   private hoverTimeout?: number;
+  private subscriptions: Subscription[] = [];
 
   @HostBinding('class.sidebar-collapsed')
   get collapsed() {
@@ -38,6 +42,8 @@ export class SideBarComponent implements OnInit, OnDestroy {
     private settingsService: SettingsService,
     private gamesService: GamesService,
     private router: Router,
+    private licenseService: LicenseService,
+    private adminService: AdminService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.companyLogo$ = this.settingsService.settings$.pipe(
@@ -49,6 +55,14 @@ export class SideBarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Track admin status
+    this.isAdminUser = this.adminService.getIsAdminLoggedIn();
+    this.subscriptions.push(
+      this.adminService.isAdminLoggedIn$.subscribe((isAdmin: boolean) => {
+        this.isAdminUser = isAdmin;
+      })
+    );
+
     // Update navigation based on current route
     this.updateNavigation(this.router.url);
 
@@ -65,6 +79,7 @@ export class SideBarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.routerSubscription?.unsubscribe();
+    this.subscriptions.forEach(sub => sub.unsubscribe());
     this.clearHoverTimeout();
   }
 
@@ -106,6 +121,13 @@ export class SideBarComponent implements OnInit, OnDestroy {
     }
   }
 
+  logout(): void {
+    // Log out both user and admin sessions
+    this.licenseService.logout();
+    this.adminService.logoutAdmin();
+    this.router.navigate(['/login']);
+  }
+
   private clearHoverTimeout() {
     if (this.hoverTimeout) {
       clearTimeout(this.hoverTimeout);
@@ -138,6 +160,18 @@ export class SideBarComponent implements OnInit, OnDestroy {
     // Find the game for the current route
     const game = this.gamesService.getGameByRoute(url);
     if (game) {
+      // Check if user has access to this game (admins have permanent licenses with all access)
+      const hasAccess = this.licenseService.hasGameAccess(game.id);
+      
+      if (!hasAccess) {
+        // User shouldn't be here, clear game context
+        this.showGameNav = false;
+        this.navigationItems = [];
+        this.currentGameName = '';
+        this.gamesService.setCurrentGame(null);
+        return;
+      }
+      
       this.showGameNav = true;
       this.currentGameName = game.name;
       // Filter out Settings from game nav items since it's always shown

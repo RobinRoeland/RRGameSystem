@@ -16,6 +16,8 @@ export * from './games.service';
 export * from './theme.service';
 export * from './tutorial.service';
 export * from './arduino.service';
+export * from './license.service';
+export * from './admin.service';
 
 // Utility services
 export * from './validation.service';

@@ -54,6 +54,18 @@ export class GamesService {
         { label: 'Settings', route: '/settings', icon: '⚙️', category: 'general' }
       ],
       gameSettings: getSlotMachineSettings()
+    },
+    {
+      id: 'test-game',
+      name: 'Test Game',
+      description: 'A test game for demonstrating license-based game access control',
+      route: '/test-game',
+      icon: '🎮',
+      playCount: 0,
+      navigationItems: [
+        { label: 'Play', route: '/test-game', icon: '🎮', category: 'game' },
+        { label: 'Settings', route: '/settings', icon: '⚙️', category: 'general' }
+      ]
     }
   ];
 
