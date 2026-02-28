@@ -2,8 +2,9 @@
 **Check out a demo of my project at: [Github Pages](https://robinroeland.github.io/RRGameSystem/)!**
 
 **Copyright © 2026 Robin Roeland. All rights reserved.**
+- `No unauthorized use, distribution or modification`
 
-~ (this is my personal project to learn and experiment)
+- this is my personal project to learn and experiment
 
 ---
 
