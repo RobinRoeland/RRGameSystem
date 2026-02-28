@@ -351,10 +351,11 @@ export class SettingsComponent extends BaseComponent implements OnInit {
   }
 
   /**
-   * Check if we should show game-specific settings (when there's a current game context)
+   * Check if we should show game-specific settings (when there's a current game context with settings)
    */
   shouldShowGameSettings(): boolean {
-    return this.gamesService.getCurrentGame() !== null;
+    const currentGame = this.gamesService.getCurrentGame();
+    return currentGame !== null && currentGame.gameSettings !== undefined && currentGame.gameSettings.length > 0;
   }
 
   /**

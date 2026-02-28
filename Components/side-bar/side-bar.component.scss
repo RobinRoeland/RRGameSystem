@@ -116,6 +116,9 @@
     padding: var(--sidebar-nav-padding);
     gap: var(--sidebar-nav-gap);
     flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: calc(var(--sidebar-nav-padding) - 5px);
 }
 
 .nav-divider {

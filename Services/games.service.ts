@@ -50,8 +50,7 @@ export class GamesService {
         { label: 'Play', route: '/slotmachine', icon: '🎮', category: 'game' },
         { label: 'Edit Items', route: '/edit-items', icon: '🎨', category: 'game' },
         { label: 'Edit Odds', route: '/edit-odds', icon: '📊', category: 'game' },
-        { label: 'Edit Prizes', route: '/edit-prizes', icon: '🏆', category: 'game' },
-        { label: 'Settings', route: '/settings', icon: '⚙️', category: 'general' }
+        { label: 'Edit Prizes', route: '/edit-prizes', icon: '🏆', category: 'game' }
       ],
       gameSettings: getSlotMachineSettings()
     },
@@ -63,8 +62,7 @@ export class GamesService {
       icon: '🎮',
       playCount: 0,
       navigationItems: [
-        { label: 'Play', route: '/test-game', icon: '🎮', category: 'game' },
-        { label: 'Settings', route: '/settings', icon: '⚙️', category: 'general' }
+        { label: 'Play', route: '/test-game', icon: '🎮', category: 'game' }
       ]
     }
   ];
