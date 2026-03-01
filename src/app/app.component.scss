@@ -40,6 +40,27 @@ side-bar {
     }
 }
 
+.copyright {
+    text-align: center;
+    padding: var(--spacing-md);
+    font-size: var(--footer-font-size);
+    color: var(--text-secondary);
+    bottom: 0;
+    right: 0;
+    position: fixed;
+    z-index: 1000;
+    user-select: none;
+}
+
+.page {
+    --prizes-collapsed-height: 48px;
+    --prizes-expanded-height: 60vh;
+}
+
+p {
+    margin: 0;
+}
+
 /* Mobile portrait - sidebar becomes full overlay */
 @media (max-width: 480px) {
     side-bar {
@@ -51,6 +72,20 @@ side-bar {
     .content {
         overflow-y: auto;
         padding-bottom: var(--spacing-lg);
+    }
+}
+
+@media (max-width: 1600px) {
+    .page:has(.prizes-sidebar) {
+        .copyright {
+            bottom: var(--prizes-collapsed-height);
+        }
+    }
+
+    .page:has(.prizes-sidebar.expanded) {
+        .copyright {
+            bottom: var(--prizes-expanded-height);
+        }
     }
 }
 
